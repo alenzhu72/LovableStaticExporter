@@ -1,18 +1,18 @@
-Lovable 静态网站导出工具
+Lovable 静态网站导出工具 2.0
 
-1. 电脑上安装 Node.js（包含 npm）。服务器不需要安装 Node.js。
-2. 完整解压工具，保持 LovableStaticExporter.exe 与 export.mjs 在同一目录。
-3. 运行 EXE，选择包含 package.json 的项目根目录，点击“一键导出 HTML + ZIP”。
-4. 完成后项目目录下生成 dist 和 dist.zip。将 dist 内全部内容上传到 IIS 网站根目录。
+一、完整解压后运行 LovableStaticExporter.exe。电脑需安装 Node.js（含 npm），保留 export.mjs 和 news.mjs。
+二、选择项目目录，或输入目录后点击“加载项目”。
+三、SEO / 栏目设置：填写全站关键词、首页描述、正式网址；启用新闻并编辑栏目名称、简介、每页篇数。
+四、新闻内容管理：添加 / 编辑 / 删除新闻，设置标题、文件名、日期、摘要、独立关键词、正文和最多一张图片。
+五、正文为纯文本，空行分段；图片支持 PNG、JPEG、GIF、WebP，最大 20 MB。文章关键词留空则继承全站关键词。
+六、点击“保存设置和新闻”保存草稿。点击“保存并导出 HTML + ZIP”，生成项目下 dist 和 dist.zip。
+七、将 dist 内全部文件上传 IIS 根目录。更新后同步整个目录，清理服务器上已删除的旧新闻。
 
-支持范围：普通 Vite 项目、使用 @lovable.dev/vite-tanstack-config 的 TanStack Start 项目。
-工具通过临时构建配置开启预渲染，不修改原始 Vite 配置。
-安装缺失依赖时会执行 npm ci / npm install；构建会执行项目自带的 build 脚本，请仅处理可信项目。
-旧 dist 保存在 .dist-backup-时间戳目录；失败时恢复旧 dist。成功后可自行清理备份。
-项目配置的自定义 outDir、其他框架、动态服务器功能不保证可导出。后端 API、登录和数据库不会变成静态 HTML。
-Lovable 图片从 README.md 中已发布的 lovable.app 地址下载；未发布或无法下载时会报错。
-本地 CSS 会内嵌，支持双击预览页面样式；JavaScript 模块请通过 HTTP/IIS 访问验证。
-外部字体、第三方 API 等外部服务仍需网络。工具不会自动配置服务器、域名或 HTTPS。
+栏目首页展示最新 3 篇，列表按日期倒序自动分页。文章生成独立 news/文件名.html。
+首页原布局保留，在底部添加新闻区块；有 header nav 时添加栏目入口。新闻页继承首页 CSS、字体和主题变量。
+全站关键词会写入导出 HTML；新闻页独立设置标题、描述、关键词。正式网址用于 canonical 和新闻 sitemap。
+SEO 标签不保证搜索排名或收录。
 
-开发者命令行用法：node export.mjs "D:\你的项目目录"
-源码：App.cs、export.mjs。
+编辑内容与图片保存在项目 .static-exporter 目录，下次加载可继续编辑，请随项目一起备份。
+原网站源码不被修改；旧 dist 自动备份。后端 API、登录、数据库不属于静态导出范围。
+仅支持普通 Vite 和 Lovable TanStack 配置；原站已有 news 目录时会提示冲突。更多说明见 README.md。

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { generateNews, loadSettings } from './news.mjs';
 
 const root = path.resolve(process.argv[2] || '.');
 const token = Date.now().toString();
@@ -30,6 +30,7 @@ async function files(dir) {
   return result;
 }
 async function main() {
+  const settings = await loadSettings(root);
   const pkg = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8'));
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
   if (!pkg.scripts?.build || !/\bvite\s+build\b/.test(pkg.scripts.build)) throw new Error('Only Vite build projects are supported. Expected a vite build script.');
@@ -112,6 +113,7 @@ async function main() {
     await fs.writeFile(htmlFile, html);
   }
   await fs.writeFile(path.join(stage, 'web.config'), '<?xml version="1.0" encoding="utf-8"?><configuration><system.webServer><defaultDocument enabled="true"><files><clear/><add value="index.html"/></files></defaultDocument></system.webServer></configuration>');
+  await generateNews(root, stage, settings);
   // Vite has completed writing its build output. Replace only the generated dist.
   if (await exists(dist)) await fs.rm(dist, { recursive: true });
   await fs.rename(stage, dist);
