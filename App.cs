@@ -30,7 +30,7 @@ class Exporter : Form {
     Settings settings = new Settings(); Article current; string loadedRoot; bool running, binding;
     JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 };
     Exporter() {
-        Text = "Lovable 静态网站导出工具 3.0 · SEO / 新闻 / SFTP 发布"; Size = new Size(1080, 820); MinimumSize = new Size(1080, 780);
+        Text = "Lovable 静态网站导出工具 3.1 · SEO / 新闻 / SFTP 发布"; Icon = System.Drawing.Icon.ExtractAssociatedIcon(typeof(Exporter).Assembly.Location); Size = new Size(1080, 820); MinimumSize = new Size(1080, 780);
         Font = new Font("Microsoft YaHei UI", 10); StartPosition = FormStartPosition.CenterScreen;
         var label = new Label { Text = "项目目录（包含 package.json）", Left = 18, Top = 14, AutoSize = true };
         directory.SetBounds(18, 40, 755, 29); directory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;

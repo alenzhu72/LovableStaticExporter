@@ -1,4 +1,6 @@
-# Lovable Static Exporter 3.0
+<img src="assets/logo.png" width="96" alt="Lovable Static Exporter logo">
+
+# Lovable Static Exporter 3.1
 
 Windows 桌面工具：选择从 GitHub 下载的 Lovable 网站目录，一键导出 `dist` 和 `dist.zip`，并通过内置 SFTP 发布到 Windows IIS。包含 SEO、新闻 / Blog 管理，以及 Windows SFTP 服务配置小工具。
 
@@ -7,6 +9,10 @@ Windows 桌面工具：选择从 GitHub 下载的 Lovable 网站目录，一键�
 [下载完整工具 ZIP](./LovableStaticExporter.zip)，解压后运行 `LovableStaticExporter.exe`。请保留同目录的 `export.mjs`、`news.mjs`、`WinSCP.exe` 和 `WinSCPnet.dll`。使用内置 SFTP 无需单独安装 WinSCP 客户端。
 
 运行电脑需要 Node.js（含 npm）及 .NET Framework 4.5+；推荐 Node.js 22.12+ 或 24，并满足网站自身依赖要求。网站服务器运行 IIS；使用一键上传时还需启用 SFTP 服务。
+
+3.1 新增独立 Logo（PNG / 多尺寸 ICO），嵌入两个 EXE 和窗口图标，并加入产品版本信息、普通权限声明、下载 SHA-256 和正式签名脚本。**当前公开构建仍未签名，图标更新不代表启动警告已解决。**见 [Windows 启动警告与签名](SIGNING.md)。
+
+Logo 由内置 image_gen 生成，[原始提示词及资产说明](assets/logo-prompt.txt)。本项目是独立工具，并非 Lovable 官方软件。
 
 ## 一键上传服务器
 

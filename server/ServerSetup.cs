@@ -7,7 +7,7 @@ using System.Windows.Forms;
 class ServerSetup : Form {
     TextBox archive = new TextBox(), website = new TextBox(), user = new TextBox(), address = new TextBox(); NumericUpDown port = new NumericUpDown { Minimum = 1, Maximum = 65535, Value = 22 };
     ServerSetup() {
-        Text = "Lovable SFTP 服务器配置 · Windows Server"; ClientSize = new Size(790,440); FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; StartPosition = FormStartPosition.CenterScreen; Font = new Font("Microsoft YaHei UI",10);
+        Text = "Lovable SFTP 服务器配置 · Windows Server"; Icon = System.Drawing.Icon.ExtractAssociatedIcon(typeof(ServerSetup).Assembly.Location); ClientSize = new Size(790,440); FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; StartPosition = FormStartPosition.CenterScreen; Font = new Font("Microsoft YaHei UI",10);
         Field("官方 OpenSSH ZIP",archive,20); var browse = new Button { Text = "选择 ZIP", Left = 650, Top = 18, Width = 115, Height = 33 }; browse.Click += delegate { using(var d = new OpenFileDialog { Filter = "OpenSSH-Win64 archive|*.zip" }) if(d.ShowDialog() == DialogResult.OK) archive.Text = d.FileName; }; Controls.Add(browse);
         Field("IIS 网站本地目录",website,78); website.Text = "C:\\inetpub\\britecard";
         Field("SFTP 专用用户名",user,136); user.Text = "lse_deploy";
