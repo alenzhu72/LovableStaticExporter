@@ -1,12 +1,30 @@
-# Lovable Static Exporter 2.0
+# Lovable Static Exporter 3.0
 
-Windows 桌面工具：选择从 GitHub 下载的 Lovable 网站目录，一键导出 `dist` 和 `dist.zip`，上传到 Windows IIS。新增 SEO 设置与本地新闻 / Blog 管理。
+Windows 桌面工具：选择从 GitHub 下载的 Lovable 网站目录，一键导出 `dist` 和 `dist.zip`，并通过内置 SFTP 发布到 Windows IIS。包含 SEO、新闻 / Blog 管理，以及 Windows SFTP 服务配置小工具。
 
 ## 下载与运行
 
-[下载完整工具 ZIP](./LovableStaticExporter.zip)，解压后运行 `LovableStaticExporter.exe`。请保留同目录的 `export.mjs` 和 `news.mjs`。
+[下载完整工具 ZIP](./LovableStaticExporter.zip)，解压后运行 `LovableStaticExporter.exe`。请保留同目录的 `export.mjs`、`news.mjs`、`WinSCP.exe` 和 `WinSCPnet.dll`。使用内置 SFTP 无需单独安装 WinSCP 客户端。
 
-运行电脑需要 Node.js（含 npm）及 .NET Framework 4.5+；推荐 Node.js 22.12+ 或 24，并满足网站自身依赖要求。Windows 网站服务器只需 IIS。
+运行电脑需要 Node.js（含 npm）及 .NET Framework 4.5+；推荐 Node.js 22.12+ 或 24，并满足网站自身依赖要求。网站服务器运行 IIS；使用一键上传时还需启用 SFTP 服务。
+
+## 一键上传服务器
+
+首次配置服务器：将工具包的 `server` 文件夹复制到服务器，运行 `SftpServerSetup.exe`。它会通过管理员 PowerShell 配置官方 OpenSSH、SFTP 专用账号、网站权限和防火墙。已有 SFTP 服务器也可直接使用。[服务器配置说明](server/README.md)
+
+1. 加载本地网站项目，进入“SFTP 服务器发布”。
+2. 填写主机、端口、账号、密码，以及 IIS 物理目录对应的 SFTP 路径，例如 `/C:/inetpub/britecard`。目标目录需先在服务器存在并授予写入权限。
+3. 点击“获取并核对指纹”，对照服务器可信控制台的 SHA-256 主机密钥指纹；核对一致后保存。后续连接严格校验，服务器密钥变化会拒绝连接。
+4. 测试连接；成功表示认证和目标目录读取成功，写入权限以实际上传为准。
+5. 修改新闻或主页后，点击顶部“构建并上传服务器”：先保存、构建，构建成功才上传 `dist` 全部内容。也可单独“上传现有 dist”。
+
+密码和 PuTTY `.ppk` 私钥认证均受支持，私钥也可有口令。OpenSSH 私钥请先用 PuTTYgen 转成 PPK。工具不上传私钥、项目源码、连接配置或口令；只传 `dist` 中的网站文件。
+
+连接设置保存在本机 `%LOCALAPPDATA%\LovableStaticExporter\connections`，按项目区分；默认不保存密码。勾选记住后，密码 / 私钥口令使用 Windows DPAPI 当前用户加密，不能由另一 Windows 用户直接解密。设置不写进 `.static-exporter/settings.json`，不进入网站 ZIP。私钥只保存路径，移动项目或换电脑后需重新配置连接。
+
+发布会覆盖目标目录的同名文件；资源和文章先上传，首页最后更新，使用临时文件完成单文件替换。整站更新不是原子切换，中断后已完成文件可能已经生效，可以重新点击发布重试。
+
+默认保留服务器额外文件。可选“同步删除已移除的新闻”：只清理由上次本工具部署清单记录、且本次已不再使用的新闻 HTML / 新闻图片；不会镜像删除其他文件或旧 JS 资源。远程 `.lovable-export-manifest.json` 记录文件相对路径，不包含凭据；请保留，以便后续安全清理。删除清单后将不再识别历史新闻。首次接管手动上传的旧站点不会自动删除历史文件。
 
 ## SEO 与新闻操作
 
@@ -42,7 +60,7 @@ Windows 桌面工具：选择从 GitHub 下载的 Lovable 网站目录，一键�
   dist.zip
 ```
 
-设置按项目保存，不写入网站源码。图片会复制到项目内，移动或备份项目时请带上 `.static-exporter`。在工具中编辑或删除新闻后需重新导出；上传时同步替换整个 `dist` 内容，清理服务器上的旧新闻文件，避免删除后的页面继续存在。
+设置按项目保存，不写入网站源码。图片会复制到项目内，移动或备份项目时请带上 `.static-exporter`。在工具中编辑或删除新闻后需重新导出；使用 SFTP 的可选清理同步已删除新闻。手动上传时应清理服务器上的旧新闻文件，避免删除后的页面继续存在。
 
 ## 样式与部署
 
@@ -69,7 +87,7 @@ CSS 内嵌便于双击查看样式。新闻页可直接打开；原站点 JavaSc
 .\build.ps1
 ```
 
-构建脚本编译 EXE、检查 JS、运行新闻生成测试及 Windows 窗口保存测试，然后生成工具 ZIP。
+构建脚本编译客户端和服务器配置 EXE、检查 JS / 服务脚本、运行新闻生成测试及 Windows 窗口保存测试，然后生成工具 ZIP。缺少 SFTP 组件时，从官方 NuGet 下载固定版本并校验 SHA-256 和可执行文件签名；授权和对应源代码链接见 [第三方说明](vendor/winscp/NOTICE.md)。
 
 ```powershell
 node --test tests/news.test.mjs
@@ -77,3 +95,7 @@ node export.mjs "D:\你的项目目录"
 ```
 
 `tests/browser-check.mjs` 为可选浏览器验证，需要 Playwright 和 Edge；测试截图与示例项目在本地隔离目录生成，不属于实际网站内容。
+
+`tests/sftp-fixture.py` 和 `tests/SftpTests.cs` 使用仅监听 loopback 的 Paramiko 测试服务器，验证实际密码 / 私钥连接、错误指纹拒绝、加密保存、递归上传、覆盖更新和仅清理已登记新闻。服务端安装脚本仅作语法检查；在你的实际 Windows Server 上首次安装仍需现场验证。
+
+安装测试依赖 `python -m pip install paramiko` 后可运行 `powershell -File tests/run-sftp-tests.ps1`，或用 `-PythonExe` / `-ParamikoPath` 指定隔离的测试运行时。测试不安装系统服务，不连接真实服务器。

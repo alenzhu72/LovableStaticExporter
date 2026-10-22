@@ -1,4 +1,4 @@
-Lovable 静态网站导出工具 2.0
+Lovable 静态网站导出工具 3.0
 
 一、完整解压后运行 LovableStaticExporter.exe。电脑需安装 Node.js（含 npm），保留 export.mjs 和 news.mjs。
 二、选择项目目录，或输入目录后点击“加载项目”。
@@ -7,6 +7,17 @@ Lovable 静态网站导出工具 2.0
 五、正文为纯文本，空行分段；图片支持 PNG、JPEG、GIF、WebP，最大 20 MB。文章关键词留空则继承全站关键词。
 六、点击“保存设置和新闻”保存草稿。点击“保存并导出 HTML + ZIP”，生成项目下 dist 和 dist.zip。
 七、将 dist 内全部文件上传 IIS 根目录。更新后同步整个目录，清理服务器上已删除的旧新闻。
+
+八、首次配置 SFTP：将 server 文件夹复制到 Windows Server，运行 SftpServerSetup.exe。
+选择官方 OpenSSH-Win64.zip、网站目录、专用用户、允许的客户端公网 IP、端口。管理员 PowerShell 会提示设置新账号密码。
+已有 sshd 服务可复用；云服务器安全组还需放行对应端口。详细步骤见 server/README.md。
+
+九、本机工具“SFTP 服务器发布”填写主机、端口、账号、密码和远程目录，例如 /C:/inetpub/britecard。
+点击“获取并核对指纹”，与服务器可信控制台的 SHA-256 内容核对一致后保存，再测试连接。
+可改用 PuTTY .ppk 私钥，OpenSSH 私钥需先用 PuTTYgen 转换。可选记住口令，使用 Windows 当前用户加密。
+十、点击顶部“构建并上传服务器”，构建成功后自动上传 dist；也可只上传现有 dist。
+默认保留服务器额外文件。可选清理本工具部署清单记录的旧新闻；不会删除其他服务器文件。
+连接设置只保存在本机，不写入项目或网站 ZIP。上传按文件更新，中断后可重试，不是整站原子切换。
 
 栏目首页展示最新 3 篇，列表按日期倒序自动分页。文章生成独立 news/文件名.html。
 首页原布局保留，在底部添加新闻区块；有 header nav 时添加栏目入口。新闻页继承首页 CSS、字体和主题变量。

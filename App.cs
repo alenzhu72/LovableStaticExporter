@@ -24,12 +24,13 @@ class Exporter : Form {
     TextBox keywords = new TextBox(), description = new TextBox(), siteUrl = new TextBox(), newsTitle = new TextBox(), newsIntro = new TextBox();
     TextBox title = new TextBox(), slug = new TextBox(), summary = new TextBox(), articleKeywords = new TextBox(), body = new TextBox(), image = new TextBox();
     CheckBox newsEnabled = new CheckBox(); NumericUpDown pageSize = new NumericUpDown(); DateTimePicker date = new DateTimePicker();
-    Button browse = new Button(), load = new Button(), save = new Button(), export = new Button(), open = new Button();
+    Button browse = new Button(), load = new Button(), save = new Button(), export = new Button(), open = new Button(), publish = new Button();
+    SftpPanel sftpPanel;
     ListBox articles = new ListBox(); TabControl tabs = new TabControl(); Panel edit = new Panel();
     Settings settings = new Settings(); Article current; string loadedRoot; bool running, binding;
     JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 };
     Exporter() {
-        Text = "Lovable 静态网站导出工具 2.0 · SEO 与新闻管理"; Size = new Size(1080, 820); MinimumSize = new Size(1080, 780);
+        Text = "Lovable 静态网站导出工具 3.0 · SEO / 新闻 / SFTP 发布"; Size = new Size(1080, 820); MinimumSize = new Size(1080, 780);
         Font = new Font("Microsoft YaHei UI", 10); StartPosition = FormStartPosition.CenterScreen;
         var label = new Label { Text = "项目目录（包含 package.json）", Left = 18, Top = 14, AutoSize = true };
         directory.SetBounds(18, 40, 755, 29); directory.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -40,8 +41,10 @@ class Exporter : Form {
         ButtonAt(export, "保存并导出 HTML + ZIP", 18, 83, 250); export.Click += async delegate { await StartExport(); };
         ButtonAt(save, "保存设置和新闻", 282, 83, 180); save.Click += delegate { try { SaveProject(); MessageBox.Show("已保存，重新加载项目可继续编辑。"); } catch(Exception ex) { MessageBox.Show(ex.Message); } };
         ButtonAt(open, "打开 dist", 476, 83, 140); open.Click += delegate { var p = Path.Combine(directory.Text.Trim(), "dist"); if(Directory.Exists(p)) Process.Start("explorer.exe", "\"" + p + "\""); };
+        ButtonAt(publish,"构建并上传服务器",630,83,220); publish.Click += async delegate { await sftpPanel.Upload(true); };
         tabs.SetBounds(18, 138, 1022, 615); tabs.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         var seoTab = new TabPage("SEO / 栏目设置"); var newsTab = new TabPage("新闻内容管理"); var logTab = new TabPage("导出日志"); tabs.TabPages.AddRange(new TabPage[] {seoTab, newsTab, logTab});
+        var sftpTab = new TabPage("SFTP 服务器发布"); sftpPanel = new SftpPanel(CurrentProject,() => StartExport(true),SetBusy,Append); sftpTab.Controls.Add(sftpPanel); tabs.TabPages.Add(sftpTab);
         Field(seoTab, "全站 SEO 关键词", keywords, 20, 23, 800, 30); Field(seoTab, "首页描述", description, 20, 76, 800, 70); description.Multiline = true;
         Field(seoTab, "网站正式地址", siteUrl, 20, 171, 800, 30);
         seoTab.Controls.Add(new Label { Text = "例：https://example.com（可选；填写后生成 canonical 与新闻 sitemap）", Left = 180, Top = 207, Width = 780 });
@@ -66,7 +69,7 @@ class Exporter : Form {
         edit.SizeChanged += delegate { body.Width = Math.Max(200,edit.ClientSize.Width - 116); body.Height = Math.Max(80,edit.ClientSize.Height - 326); };
         newsTab.Controls.AddRange(new Control[] {articles, add, remove, edit}); log.Multiline = true; log.ReadOnly = true; log.ScrollBars = ScrollBars.Both; log.WordWrap = false; log.Font = new Font("Consolas", 9); log.Dock = DockStyle.Fill; logTab.Controls.Add(log);
         newsTab.Resize += delegate { articles.Height = Math.Max(300,newsTab.ClientSize.Height - 62); edit.SetBounds(254,10,Math.Max(700,newsTab.ClientSize.Width - 266),Math.Max(400,newsTab.ClientSize.Height - 22)); body.SetBounds(100,310,edit.ClientSize.Width - 116,Math.Max(80,edit.ClientSize.Height - 326)); };
-        Controls.AddRange(new Control[] {label,directory,browse,load,export,save,open,tabs}); BindSettings(); tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = false;
+        Controls.AddRange(new Control[] {label,directory,browse,load,export,save,open,publish,tabs}); BindSettings(); tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = tabs.TabPages[3].Enabled = publish.Enabled = false;
         FormClosing += delegate(object sender, FormClosingEventArgs e) { if(running) { e.Cancel = true; MessageBox.Show("正在导出，请等待完成后关闭。"); } else if(!CanSwitch()) e.Cancel = true; };
     }
     void ButtonAt(Button b, string text, int x, int y, int w) { b.Text = text; b.SetBounds(x,y,w,34); }
@@ -82,7 +85,7 @@ class Exporter : Form {
         try {
             var folder = Path.GetFullPath(directory.Text.Trim()); if(!File.Exists(Path.Combine(folder,"package.json"))) throw new Exception("目录中没有 package.json，请选择项目根目录。");
             var file = Path.Combine(folder,".static-exporter","settings.json"); var next = File.Exists(file) ? json.Deserialize<Settings>(File.ReadAllText(file,Encoding.UTF8)) : new Settings(); if(next == null) throw new Exception("项目设置文件为空。");
-            settings = next; if(settings.articles == null) settings.articles = new List<Article>(); loadedRoot = folder; current = null; BindSettings(); tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = true;
+            settings = next; if(settings.articles == null) settings.articles = new List<Article>(); loadedRoot = folder; current = null; BindSettings(); sftpPanel.LoadProfile(folder); tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = tabs.TabPages[3].Enabled = publish.Enabled = true;
         } catch(Exception ex) { MessageBox.Show("加载失败：" + ex.Message); }
     }
     void BindSettings() { keywords.Text = settings.keywords ?? ""; description.Text = settings.description ?? ""; siteUrl.Text = settings.siteUrl ?? ""; newsEnabled.Checked = settings.newsEnabled; newsTitle.Text = settings.newsTitle ?? "新闻动态"; newsIntro.Text = settings.newsIntro ?? ""; pageSize.Value = Math.Max(1,Math.Min(50,settings.pageSize)); RefreshArticles(null); }
@@ -102,21 +105,25 @@ class Exporter : Form {
         }
         var target = Path.Combine(dataDir,"settings.json"); var temp = target + ".tmp"; File.WriteAllText(temp,json.Serialize(settings),new UTF8Encoding(false));
         if(File.Exists(target)) File.Copy(target,target + ".bak",true); File.Copy(temp,target,true); File.Delete(temp); RefreshArticles(current);
+        sftpPanel.SaveProfile();
     }
+    string CurrentProject() { if(loadedRoot == null || !String.Equals(Path.GetFullPath(directory.Text.Trim()),loadedRoot,StringComparison.OrdinalIgnoreCase)) throw new Exception("请先选择项目并点击“加载项目”。"); return loadedRoot; }
+    void SetBusy(bool value) { running = value; export.Enabled = browse.Enabled = load.Enabled = save.Enabled = directory.Enabled = open.Enabled = !value; publish.Enabled = !value && loadedRoot != null; tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = tabs.TabPages[3].Enabled = !value && loadedRoot != null; if(value) tabs.SelectedIndex = 2; }
     void Append(string line) { if(line == null || IsDisposed) return; BeginInvoke((Action)(() => log.AppendText(line + Environment.NewLine))); }
-    async Task StartExport() {
-        try { SaveProject(); } catch(Exception ex) { MessageBox.Show(ex.Message); return; }
+    async Task<bool> StartExport(bool quiet = false) {
+        try { SaveProject(); } catch(Exception ex) { MessageBox.Show(ex.Message); return false; }
         string folder = loadedRoot; var script = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"export.mjs");
-        if(!File.Exists(script) || !File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"news.mjs"))) { MessageBox.Show("缺少导出脚本，请完整解压工具。"); return; }
-        running = true; export.Enabled = browse.Enabled = load.Enabled = save.Enabled = directory.Enabled = open.Enabled = false; tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = false; tabs.SelectedIndex = 2; log.Clear();
+        if(!File.Exists(script) || !File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"news.mjs"))) { MessageBox.Show("缺少导出脚本，请完整解压工具。"); return false; }
+        SetBusy(true); log.Clear();
         try {
             int code = await Task.Run(() => {
                 var info = new ProcessStartInfo("node.exe", "\"" + script + "\" \"" + folder + "\""); info.UseShellExecute = false; info.CreateNoWindow = true; info.RedirectStandardOutput = true; info.RedirectStandardError = true; info.StandardOutputEncoding = Encoding.UTF8; info.StandardErrorEncoding = Encoding.UTF8;
                 using(var p = new Process()) { p.StartInfo = info; p.OutputDataReceived += (s,e) => Append(e.Data); p.ErrorDataReceived += (s,e) => Append(e.Data); p.Start(); p.BeginOutputReadLine(); p.BeginErrorReadLine(); p.WaitForExit(); return p.ExitCode; }
             });
-            MessageBox.Show(code == 0 ? "导出完成！请上传 dist 内的全部文件，或使用 dist.zip。" : "导出失败，请查看日志；修正后可重新导出。", "导出结果");
-        } catch(Exception ex) { Append(ex.Message); MessageBox.Show("无法运行：" + ex.Message + "\n请先安装 Node.js 并重新打开工具。"); }
-        finally { running = false; export.Enabled = browse.Enabled = load.Enabled = save.Enabled = directory.Enabled = open.Enabled = true; tabs.TabPages[0].Enabled = tabs.TabPages[1].Enabled = true; }
+            if(!quiet || code != 0) MessageBox.Show(code == 0 ? "导出完成！请上传 dist 内的全部文件，或使用 dist.zip。" : "导出失败，请查看日志；修正后可重新导出。", "导出结果");
+            return code == 0;
+        } catch(Exception ex) { Append(ex.Message); MessageBox.Show("无法运行：" + ex.Message + "\n请先安装 Node.js 并重新打开工具。"); return false; }
+        finally { SetBusy(false); }
     }
     [STAThread] static void Main() { Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false); Application.Run(new Exporter()); }
 }
